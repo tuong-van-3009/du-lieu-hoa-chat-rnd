@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>DỮ LIỆU HÓA CHẤT R&D</title>
+<style>
+  :root{
+    --navy:#3F6B4F; --navy-d:#2E4F3B; --bg:#F4F7F4; --card:#ffffff;
+    --border:#DCE4DD; --text:#1c2733; --muted:#66738A; --accent-bg:#E8F0E9;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:Arial,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);}
+  header{background:var(--navy);color:#fff;padding:22px 28px;}
+  header h1{margin:0;font-size:22px;font-weight:600;}
+  header p{margin:4px 0 0;font-size:13px;color:#cfe0f2;}
+  .wrap{max-width:1180px;margin:0 auto;padding:22px 24px 60px;}
+  .toolbar{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px;position:sticky;top:0;background:var(--bg);padding:14px 0;z-index:5;}
+  .toolbar input[type=text]{flex:1;min-width:220px;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;}
+  .toolbar select{padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:#fff;}
+  .status-bar{font-size:12.5px;padding:8px 0;color:var(--muted);}
+  .count{font-size:13px;color:var(--muted);margin-bottom:12px;}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px;cursor:pointer;transition:box-shadow .15s;}
+  .card:hover{box-shadow:0 3px 14px rgba(31,78,120,.12);}
+  .tag{display:inline-block;font-size:11px;font-weight:600;color:var(--navy);background:var(--accent-bg);padding:3px 9px;border-radius:20px;margin-bottom:8px;}
+  .name{font-size:15.5px;font-weight:700;margin:0 0 2px;}
+  .sub{font-size:12.5px;color:var(--muted);margin:0 0 10px;}
+  .row{display:flex;justify-content:space-between;font-size:12.5px;padding:3px 0;border-top:1px dashed var(--border);gap:10px;}
+  .row:first-of-type{border-top:none;}
+  .row span:first-child{color:var(--muted);white-space:nowrap;}
+  .row span:last-child{font-weight:600;text-align:right;}
+  .empty{text-align:center;color:var(--muted);padding:60px 0;font-size:14px;}
+  .modal-bg{position:fixed;inset:0;background:rgba(15,25,40,.45);display:none;align-items:flex-start;justify-content:center;padding:40px 16px;z-index:50;overflow:auto;}
+  .modal{background:#fff;border-radius:14px;max-width:640px;width:100%;padding:26px 28px;position:relative;}
+  .modal h2{margin:0 0 2px;font-size:19px;}
+  .modal .sub{margin-bottom:14px;}
+  .modal .close{position:absolute;top:16px;right:18px;border:none;background:none;font-size:20px;cursor:pointer;color:var(--muted);}
+  .field{display:flex;justify-content:space-between;gap:16px;padding:8px 0;border-top:1px solid var(--border);font-size:13.5px;}
+  .field span:first-child{color:var(--muted);min-width:150px;}
+  .field span:last-child{font-weight:600;text-align:right;}
+  .links{display:flex;gap:10px;margin-top:16px;}
+  .links a{flex:1;text-align:center;padding:9px;border:1px solid var(--navy);color:var(--navy);border-radius:8px;text-decoration:none;font-size:13px;font-weight:600;}
+  .links a:hover{background:var(--accent-bg);}
+  details{margin-top:18px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 18px;}
+  summary{cursor:pointer;font-weight:600;font-size:13.5px;color:var(--navy);}
+  textarea{width:100%;height:110px;margin-top:10px;font-family:monospace;font-size:12px;padding:10px;border:1px solid var(--border);border-radius:8px;}
+  .btn{margin-top:8px;padding:9px 16px;background:var(--navy);color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;}
+  .btn:hover{background:var(--navy-d);}
+  .note{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.6;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>DỮ LIỆU HÓA CHẤT R&amp;D</h1>
+  <p>Tra cứu thông tin kỹ thuật &amp; an toàn hóa chất — nguồn dữ liệu: Google Sheet "DỮ LIỆU HÓA CHẤT"</p>
+</header>
+
+<div class="wrap">
+  <div class="toolbar">
+    <input type="text" id="search" placeholder="Tìm theo tên chất, hoạt chất hoặc số CAS...">
+    <select id="group"><option value="">Tất cả nhóm</option></select>
+  </div>
+  <div class="status-bar" id="syncStatus">Đang tải dữ liệu...</div>
+  <div class="count" id="count"></div>
+  <div class="grid" id="grid"></div>
+  <div class="empty" id="empty" style="display:none;">Không tìm thấy kết quả phù hợp.</div>
+
+  <details>
+    <summary>Cấu hình nguồn dữ liệu Google Sheet</summary>
+    <div class="note">
+      Link CSV hiện đang dùng đã được gắn sẵn trong file. Chỉ thay đổi ô dưới nếu bạn muốn trỏ sang một Google Sheet khác.
+    </div>
+    <input type="text" id="sheetUrl" placeholder="https://docs.google.com/spreadsheets/d/e/..../pub?output=csv" style="width:100%;margin-top:10px;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:12.5px;">
+    <div style="margin-top:8px;">
+      <button class="btn" onclick="connectSheet()">Lưu &amp; tải dữ liệu</button>
+      <button class="btn" style="background:#0f6e56" onclick="fetchSheetData(document.getElementById('sheetUrl').value||DEFAULT_SHEET_URL,false)">Làm mới dữ liệu ngay</button>
+    </div>
+  </details>
+</div>
+
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <button class="close" onclick="closeModal()">&times;</button>
+    <h2 id="mName"></h2>
+    <p class="sub" id="mSub"></p>
+    <div id="mFields"></div>
+    <div class="links" id="mLinks"></div>
+  </div>
+</div>
+
+<script>
+const DEFAULT_SHEET_URL = "https://docs.google.com/spreadsheets/d/1T7wsOuDkSlvq2n7bE7yG9UzWiIlXkMmAO98r5D7xTjU/gviz/tq?tqx=out:csv&gid=0";
+const KEYS = ["stt","group","name","iupac","content","cas","appearance","solubility","ph","moisture","melting","classify","toxclass","tds","msds","patent","updated","note"];
+
+let DATA = [];
+
+function parseCSV(text){
+  const rows = []; let row = []; let field = ''; let inQuotes = false;
+  for (let i=0;i<text.length;i++){
+    const c = text[i], next = text[i+1];
+    if (inQuotes){
+      if (c === '"' && next === '"'){ field+='"'; i++; }
+      else if (c === '"'){ inQuotes=false; }
+      else { field+=c; }
+    } else {
+      if (c === '"'){ inQuotes=true; }
+      else if (c === ','){ row.push(field); field=''; }
+      else if (c === '\n'){ row.push(field); rows.push(row); row=[]; field=''; }
+      else if (c === '\r'){ /* skip */ }
+      else { field+=c; }
+    }
+  }
+  if (field.length || row.length){ row.push(field); rows.push(row); }
+  return rows.filter(r=>r.length && r.some(c=>c.trim()!==''));
+}
+
+function rowsToData(rows){
+  const body = rows.slice(1);
+  return body.map(r=>{
+    const o = {}; KEYS.forEach((k,i)=>o[k]=(r[i]||'').trim()); return o;
+  }).filter(o=>o.name);
+}
+
+function setStatus(msg, ok){
+  const el = document.getElementById('syncStatus');
+  el.textContent = msg;
+  el.style.color = ok ? '#0f6e56' : '#a32d2d';
+}
+
+async function fetchSheetData(url, silent){
+  try{
+    if(!silent) setStatus('Đang tải dữ liệu từ Google Sheet...', true);
+    const res = await fetch(url + (url.includes('?')?'&':'?') + '_=' + Date.now());
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const text = await res.text();
+    const rows = parseCSV(text);
+    const newData = rowsToData(rows);
+    if(!newData.length) throw new Error('Sheet chưa có dữ liệu hoặc link chưa đúng định dạng CSV');
+    DATA = newData;
+    populateGroups(); render();
+    setStatus(`Đã đồng bộ ${DATA.length} chất từ Google Sheet · cập nhật lúc ${new Date().toLocaleString('vi-VN')}`, true);
+    return true;
+  }catch(e){
+    DATA = [];
+    populateGroups(); render();
+    setStatus('Không tải được dữ liệu: ' + e.message, false);
+    return false;
+  }
+}
+
+function connectSheet(){
+  const url = document.getElementById('sheetUrl').value.trim();
+  if(!url){ alert('Chưa nhập link.'); return; }
+  fetchSheetData(url, false);
+}
+
+const GROUP_COLORS = {
+  "Đa, trung, vi lượng": {bg:"#E3EEFB", text:"#2B5FA8"},
+  "Điều hòa sinh trưởng": {bg:"#FBE6E6", text:"#B03A3A"},
+  "Thuốc BVTV": {bg:"#FBF3D9", text:"#9A7B10"},
+  "Phụ gia": {bg:"#E3F3E5", text:"#2E7D42"},
+};
+const FALLBACK_COLORS = [
+  {bg:"#E3F3E5", text:"#2E7D42"}, {bg:"#E3EEFB", text:"#2B5FA8"},
+  {bg:"#FBF3D9", text:"#9A7B10"}, {bg:"#F1E6F6", text:"#7A3F9D"},
+  {bg:"#FBE6E6", text:"#B03A3A"}, {bg:"#E2F4F1", text:"#1E7A6C"},
+];
+function getGroupColor(group){
+  if (GROUP_COLORS[group]) return GROUP_COLORS[group];
+  const groups = [...new Set(DATA.map(d=>d.group).filter(Boolean))];
+  const idx = groups.indexOf(group);
+  return FALLBACK_COLORS[idx >= 0 ? idx % FALLBACK_COLORS.length : 0];
+}
+
+function populateGroups(){
+  const sel = document.getElementById('group');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">Tất cả nhóm</option>';
+  const groups = [...new Set(DATA.map(d=>d.group).filter(Boolean))];
+  groups.forEach(g=>{
+    const o = document.createElement('option'); o.value=g; o.textContent=g; sel.appendChild(o);
+  });
+  if (groups.includes(current)) sel.value = current;
+}
+
+function render(){
+  const q = document.getElementById('search').value.trim().toLowerCase();
+  const g = document.getElementById('group').value;
+  const grid = document.getElementById('grid');
+  const filtered = DATA.filter(d=>{
+    const matchQ = !q || [d.name,d.iupac,d.cas].join(' ').toLowerCase().includes(q);
+    const matchG = !g || d.group===g;
+    return matchQ && matchG;
+  });
+  document.getElementById('count').textContent = DATA.length ? `${filtered.length} / ${DATA.length} chất` : '';
+  document.getElementById('empty').style.display = filtered.length ? 'none':'block';
+  grid.innerHTML = filtered.map((d)=>`
+    <div class="card" onclick="openModal(${DATA.indexOf(d)})">
+      <span class="tag" style="background:${getGroupColor(d.group).bg};color:${getGroupColor(d.group).text}">${d.group||'Chưa phân nhóm'}</span>
+      <p class="name">${d.name}</p>
+      <p class="sub">${d.iupac&&d.iupac!=='-'?d.iupac+' · ':''}${d.cas?'CAS '+d.cas:''}</p>
+      <div class="row"><span>Ngoại dạng</span><span>${d.appearance||'-'}</span></div>
+      <div class="row"><span>Độ tan</span><span>${d.solubility||'-'}</span></div>
+      <div class="row"><span>pH (dd 1%)</span><span>${d.ph||'-'}</span></div>
+    </div>
+  `).join('');
+}
+
+function openModal(idx){
+  const d = DATA[idx];
+  document.getElementById('mName').textContent = d.name;
+  document.getElementById('mSub').textContent = `${d.group||''}${d.cas?' · CAS '+d.cas:''}`;
+  const fields = [
+    ["Tên IUPAC/INN", d.iupac], ["Hàm lượng", d.content], ["Ngoại dạng", d.appearance],
+    ["Độ tan", d.solubility], ["pH (dung dịch 1%)", d.ph], ["Độ ẩm (%)", d.moisture],
+    ["Điểm nóng chảy (°C)", d.melting], ["Phân loại", d.classify], ["Phân loại độc tính", d.toxclass],
+    ["Ngày cập nhật", d.updated], ["Ghi chú", d.note],
+  ];
+  document.getElementById('mFields').innerHTML = fields.map(f=>`<div class="field"><span>${f[0]}</span><span>${f[1]||'-'}</span></div>`).join('');
+  document.getElementById('mLinks').innerHTML = `
+    <a href="${d.tds||'#'}" target="_blank">Xem file TDS</a>
+    <a href="${d.msds||'#'}" target="_blank">Xem file MSDS</a>
+    <a href="${d.patent||'#'}" target="_blank">Xem bằng sáng chế</a>`;
+  document.getElementById('modalBg').style.display='flex';
+}
+function closeModal(){ document.getElementById('modalBg').style.display='none'; }
+document.getElementById('modalBg').addEventListener('click', e=>{ if(e.target.id==='modalBg') closeModal(); });
+
+document.getElementById('search').addEventListener('input', render);
+document.getElementById('group').addEventListener('change', render);
+document.getElementById('sheetUrl').value = DEFAULT_SHEET_URL;
+
+populateGroups(); render();
+fetchSheetData(DEFAULT_SHEET_URL, true);
+</script>
+</body>
+</html>
